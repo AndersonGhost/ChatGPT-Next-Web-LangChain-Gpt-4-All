@@ -335,8 +335,7 @@ export const useChatStore = createPersistStore(
           config.pluginConfig.enable &&
           session.mask.usePlugins &&
           allPlugins.length > 0 &&
-          modelConfig.model.startsWith("gpt") &&
-          modelConfig.model != "gpt-4-vision-preview"
+          !modelConfig.model.includes("vision")
         ) {
           console.log("[ToolAgent] start");
           const pluginToolNames = allPlugins.map((m) => m.toolName);

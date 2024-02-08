@@ -31,8 +31,9 @@ async function handle(req: NextRequest) {
     }
 
     const buffer = Buffer.from(imageData);
-
-    var fileName = `${Date.now()}.png`;
+    
+    // 使用获取到的文件后缀
+    var fileName = image.name;
     var filePath = "";
     const serverConfig = getServerSideConfig();
     if (serverConfig.isStoreFileToLocal) {

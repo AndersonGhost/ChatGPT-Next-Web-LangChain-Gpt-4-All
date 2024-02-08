@@ -121,10 +121,25 @@ function _MarkDownContent(props: { content: string; imageBase64?: string }) {
     () => escapeDollarNumber(props.content),
     [props.content],
   );
+  // 判断文件路径
+  const isImage = (filename: any) => {
+    const imageExtensions = ['.png', '.jpg', '.jpeg', '.gif', '.bmp', '.webp', '.tiff'];
+    return imageExtensions.some(ext => filename.toLowerCase().endsWith(ext));
+  };
 
+  const show_filename = (base64: any) => {
+    let parts = base64.split("/");
+    return parts.pop();
+  };
   return (
     <div style={{ fontSize: "inherit" }}>
-      {props.imageBase64 && <img src={props.imageBase64} alt="" />}
+      {props.imageBase64 && isImage(props.imageBase64) && <img src={props.imageBase64} alt="" />}
+      {props.imageBase64 && !isImage(props.imageBase64) &&
+        <a href={props.imageBase64} style={{ fontWeight: 'bold' }}>
+          文件：{show_filename(props.imageBase64)}
+        </a>
+      }
+      
       <ReactMarkdown
         remarkPlugins={[RemarkMath, RemarkGfm, RemarkBreaks]}
         rehypePlugins={[

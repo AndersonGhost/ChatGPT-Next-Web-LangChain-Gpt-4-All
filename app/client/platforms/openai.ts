@@ -83,7 +83,7 @@ export class ChatGPTApi implements LLMApi {
       const base64 = Buffer.from(response.data, "binary").toString("base64");
       return base64;
     };
-    if (options.config.model === "gpt-4-vision-preview") {
+    if (options.config.model.includes("vision")) {
       for (const v of options.messages) {
         let message: {
           role: string;
@@ -102,10 +102,91 @@ export class ChatGPTApi implements LLMApi {
         });
         if (v.image_url) {
           var base64Data = await getImageBase64Data(v.image_url);
+          interface MIMEMap {
+            [key: string]: string;
+          }
+
+          const extensionToMIME: MIMEMap = {
+            'png': 'image/png',
+            'jpg': 'image/jpeg',
+            'webp': 'image/webp',
+            'gif': 'image/gif',
+            'bmp': 'image/bmp',
+            'svg': 'image/svg+xml',
+            'txt': 'text/plain',
+            'pdf': 'application/pdf',
+            'doc': 'application/msword',
+            'docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+            'xls': 'application/vnd.ms-excel',
+            'xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+            'ppt': 'application/vnd.ms-powerpoint',
+            'pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+            'zip': 'application/zip',
+            'rar': 'application/x-rar-compressed',
+            'bin': 'application/octet-stream',
+
+            // Audio
+            'mp3': 'audio/mpeg',
+            'wav': 'audio/wav',
+            'ogg': 'audio/ogg',
+            'flac': 'audio/flac',
+            'aac': 'audio/aac',
+            'weba': 'audio/webm',
+            'midi': 'audio/midi',
+
+            // Video
+            'mp4': 'video/mp4',
+            'webm': 'video/webm',
+            'avi': 'video/x-msvideo',
+            'wmv': 'video/x-ms-wmv',
+            'flv': 'video/x-flv',
+            '3gp': 'video/3gpp',
+            'mkv': 'video/x-matroska',
+
+            //编程
+            'js': 'application/javascript',
+            'json': 'application/json',
+            'html': 'text/html',
+            'css': 'text/css',
+            'xml': 'application/xml',
+            'csv': 'text/csv',
+            'ts': 'text/typescript',
+            'java': 'text/x-java-source',
+            'py': 'text/x-python',
+            'c': 'text/x-csrc',
+            'cpp': 'text/x-c++src',
+            'h': 'text/x-chdr',
+            'hpp': 'text/x-c++hdr',
+            'php': 'application/x-httpd-php',
+            'rb': 'text/x-ruby',
+            'go': 'text/x-go',
+            'rs': 'text/rust',
+            'swift': 'text/x-swift',
+            'kt': 'text/x-kotlin',
+            'scala': 'text/x-scala',
+          };
+
+          let mimeType: string | undefined;
+          try {
+            // 使用正则表达式获取文件后缀
+            const match = v.image_url.match(/\.(\w+)$/);
+            if (match) {
+              const fileExtension = match[1].toLowerCase();
+              mimeType = extensionToMIME[fileExtension];
+              if (!mimeType) {
+                throw new Error('Unknown file extension: ' + fileExtension);
+              }
+            } else {
+              throw new Error('Unable to extract file extension from the URL');
+            }
+          } catch (error) {
+            // 使用通用的MIME类型
+            mimeType = 'text/plain';
+          }
           message.content.push({
             type: "image_url",
             image_url: {
-              url: `data:image/jpeg;base64,${base64Data}`,
+              url: `data:${mimeType};base64,${base64Data}`,
             },
           });
         }
@@ -136,7 +217,7 @@ export class ChatGPTApi implements LLMApi {
       frequency_penalty: modelConfig.frequency_penalty,
       top_p: modelConfig.top_p,
       max_tokens:
-        modelConfig.model == "gpt-4-vision-preview"
+        modelConfig.model.includes("vision")
           ? modelConfig.max_tokens
           : null,
       // max_tokens: Math.max(modelConfig.max_tokens, 1024),
@@ -226,7 +307,7 @@ export class ChatGPTApi implements LLMApi {
               try {
                 const resJson = await res.clone().json();
                 extraInfo = prettyObject(resJson);
-              } catch {}
+              } catch { }
 
               if (res.status === 401) {
                 responseTexts.push(Locale.Error.Unauthorized);
